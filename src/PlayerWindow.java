@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -44,16 +45,18 @@ public class PlayerWindow extends javax.swing.JFrame {
         stopButton = new JButton();
         muteButton = new JButton();
         appPlayer = new AppPlayer();
-        isMuted = false;
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setLocation(getToolkit().getScreenSize().width/2, getToolkit().getScreenSize().height/6);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
         jTree1.setBackground(Color.LIGHT_GRAY);
         inferiorPanel.setBackground(new Color(30, 80, 128));
 
         selectFolder.setText("Select Folder");
         selectFolder.addActionListener(evt -> selectFolderActionPerformed(evt));
 
-        /** Adds a listener to check the status of the slider*/
+        /** Adds a listener to check the status of the timer slider*/
+        timeSlider.setValue(0);
         timeSlider.addChangeListener(e -> {
             JSlider source = (JSlider) e.getSource();
             if(!source.getValueIsAdjusting()){
@@ -62,17 +65,24 @@ public class PlayerWindow extends javax.swing.JFrame {
             }
         });
 
-        songTable.setModel(new javax.swing.table.DefaultTableModel(
-                new Object [][] {
-                        {null, null, null, null},
-                        {null, null, null, null},
-                        {null, null, null, null},
-                        {null, null, null, null}
-                },
+        /** Adds a listener to check the status of the volume slider*/
+        volumeSlider.addChangeListener(e -> {
+            JSlider source = (JSlider) e.getSource();
+            if(!source.getValueIsAdjusting()){
+                double volume = (double)source.getValue()/100.0;
+                appPlayer.setVolume(volume);
+            }
+        });
+
+        songTable.setAutoCreateRowSorter(true);
+        songTable.setModel(new DefaultTableModel(
+                new Object [][] {},
                 new String [] {
-                        "Song", "Album", "Artist", "Size"
+                        "Song", "Album", "Artist", "Genre"
                 }
-        ));
+        ){
+            public boolean isCellEditable(int row, int column) { return false; }
+        });
         jScrollPane1.setViewportView(songTable);
         jScrollPane3.setViewportView(jTree1);
 
@@ -86,21 +96,31 @@ public class PlayerWindow extends javax.swing.JFrame {
         separatorLabel.setForeground(Color.WHITE);
 
         // ----------------------Buttons configuration ------------------------- //
-        playPauseButton.setIcon(new ImageIcon("res/pause.png"));
+        playPauseButton.setIcon(new ImageIcon("res/play.png"));
         playPauseButton.setContentAreaFilled(false);
         playPauseButton.addActionListener(new ActionListener() {
-            boolean isPlaying = true;
-            ImageIcon pauseIcon = new ImageIcon("res/play.png");
-            ImageIcon playIcon = new ImageIcon("res/pause.png");
+            boolean isPlaying = false;
+
+            ImageIcon pauseIcon = new ImageIcon("res/pause.png");
+            ImageIcon playIcon = new ImageIcon("res/play.png");
             @Override
             public void actionPerformed( ActionEvent arg0 )
             {
-                if(isPlaying){
-                    System.out.println("Paused pressed");
+                rowIndex = songTable.getSelectedRow();
+                if(hasSelectionChanged(selected, rowIndex)){
+                    timeSlider.setValue(0);
+                    selected = rowIndex;
+                    appPlayer.stopSong();
+                    appPlayer.startSong((String)songTable.getValueAt(rowIndex,0), startTimeLabel, endTimeLabel);
                     playPauseButton.setIcon(pauseIcon);
+                }else if(isPlaying){
+                    System.out.println("Paused pressed");
+                    playPauseButton.setIcon(playIcon);
+                    appPlayer.pauseSong();
                 }else{
                     System.out.println("Play pressed");
-                    playPauseButton.setIcon(playIcon);
+                    playPauseButton.setIcon(pauseIcon);
+                    appPlayer.resumeSong();
                 }
                 isPlaying = !isPlaying;
             }
@@ -137,12 +157,29 @@ public class PlayerWindow extends javax.swing.JFrame {
         previousButton.setIcon(new ImageIcon("res/previous.png"));
         previousButton.setBackground(new Color(30, 80, 128));
         previousButton.setContentAreaFilled(false);
-        previousButton.addActionListener(evt -> previousButtonActionPerformed(evt));
-
+        previousButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                timeSlider.setValue(0);
+                selected = --rowIndex;
+                appPlayer.stopSong();
+                appPlayer.startSong((String)songTable.getValueAt(rowIndex,0), startTimeLabel, endTimeLabel);
+                playPauseButton.setIcon(new ImageIcon("res/pause.png"));
+            }
+        });
         nextButton.setIcon(new ImageIcon("res/next.png"));
         nextButton.setBackground(new Color(30, 80, 128));
         nextButton.setContentAreaFilled(false);
-        nextButton.addActionListener(evt -> nextButtonActionPerformed(evt));
+        nextButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                timeSlider.setValue(0);
+                selected = ++rowIndex;
+                appPlayer.stopSong();
+                appPlayer.startSong((String)songTable.getValueAt(rowIndex,0), startTimeLabel, endTimeLabel);
+                playPauseButton.setIcon(new ImageIcon("res/pause.png"));
+            }
+        });
 
         replayButton.setIcon(new ImageIcon("res/replay.png"));
         replayButton.setBackground(new Color(30, 80, 128));
@@ -248,47 +285,31 @@ public class PlayerWindow extends javax.swing.JFrame {
      * If the file chooser has executed successfully the AppPlayer will receive the song
      * and make it ready to play.*/
     private void selectFolderActionPerformed(java.awt.event.ActionEvent evt) {
-        //FileFilter filter = new FileNameExtensionFilter("Audio Files", "mp3", "wma", "flac");
+
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setMultiSelectionEnabled(true);
         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        //fileChooser.addChoosableFileFilter(filter);
-        //fileChooser.setFileFilter(filter);
         int returnValue = fileChooser.showOpenDialog(null);
 
         if(returnValue == JFileChooser.APPROVE_OPTION){
-            File songFile = fileChooser.getSelectedFile();
-            if(songFile.isDirectory())
-                System.out.println("Diretorio escolhido: "+songFile.getName());
-            //pathField.setText(songFile.getPath());
-//            String path = null;
-//            try {
-//                path = songFile.toURI().toURL().toString();
-//            } catch (MalformedURLException e) {
-//                e.printStackTrace();
-//            }
-            //appPlayer.setSong();
+            File selectedFolder = fileChooser.getSelectedFile();
+            appPlayer.importSongs(selectedFolder, songTable);
         }
     }
 
     /** Stop Button event handler*/
     private void stopButtonActionPerformed(ActionEvent evt) {
         System.out.println("Stop pressed");
-        //appPlayer.stopSong();
-    }
-
-    private void previousButtonActionPerformed(ActionEvent evt) {
-        System.out.println("previous pressed");
-    }
-
-    private void nextButtonActionPerformed(ActionEvent evt) {
-        System.out.println("next pressed");
+        appPlayer.stopSong();
     }
 
     private void replayButtonActionPerformed(ActionEvent evt) {
         System.out.println("replay pressed");
     }
 
+    private boolean hasSelectionChanged(int old, int current){
+        return (old != current);
+    }
     /**
      * @param args the command line arguments
      */
@@ -340,7 +361,8 @@ public class PlayerWindow extends javax.swing.JFrame {
     private JTable songTable;
     private JSlider timeSlider;
     private JSlider volumeSlider;
-    private boolean isMuted;
     private AppPlayer appPlayer;
+    int selected = -1;
+    int rowIndex;
     // End of variables declaration
 }
