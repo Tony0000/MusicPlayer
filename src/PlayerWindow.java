@@ -2,6 +2,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.awt.event.ActionEvent;
 
@@ -27,10 +29,11 @@ public class PlayerWindow extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">
     private void initComponents() {
 
+        //GridBagConstraints gridBagConstraints;
         jScrollPane1 = new JScrollPane();
-        jScrollPane3 = new JScrollPane();
         songTable = new JTable();
-        jTree1 = new JTree();
+        mainPanel = new JPanel();
+        controlPanel = new JPanel();
         inferiorPanel = new JPanel();
         separatorLabel = new JLabel();
         startTimeLabel = new JLabel();
@@ -44,26 +47,42 @@ public class PlayerWindow extends javax.swing.JFrame {
         replayButton = new JButton();
         stopButton = new JButton();
         muteButton = new JButton();
-        appPlayer = new AppPlayer();
+        appPlayer = new AppPlayer(timeSlider);
+        toggleReplay = false;
+        disableSkip = false;
 
         setLocation(getToolkit().getScreenSize().width/2, getToolkit().getScreenSize().height/6);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        jTree1.setBackground(Color.LIGHT_GRAY);
         inferiorPanel.setBackground(new Color(30, 80, 128));
+        controlPanel.setBackground(new Color(30, 80, 128));
 
+        controlPanel.add(startTimeLabel);
+
+        controlPanel.add(separatorLabel);
+        controlPanel.add(endTimeLabel);
+        controlPanel.add(replayButton);
+        controlPanel.add(stopButton);
+        controlPanel.add(previousButton);
+        controlPanel.add(playPauseButton);
+        controlPanel.add(nextButton);
+        controlPanel.add(muteButton);
+        controlPanel.add(volumeSlider);
         selectFolder.setText("Select Folder");
-        selectFolder.addActionListener(evt -> selectFolderActionPerformed(evt));
+        selectFolder.addActionListener(evt -> selectFolderActionPerformed());
 
         /** Adds a listener to check the status of the timer slider*/
         timeSlider.setValue(0);
-        timeSlider.addChangeListener(e -> {
+        /** TODO: Time skipping disabled due to time slider update interfering with skip
+        * time slider update invokes changeListener causing audio issues */
+
+        /*timeSlider.addChangeListener(e -> {
             JSlider source = (JSlider) e.getSource();
             if(!source.getValueIsAdjusting()){
-                double time = (double)source.getValue()/100.0;
+                double time = (double)source.getValue();
                 appPlayer.skip(time);
             }
-        });
+        });*/
 
         /** Adds a listener to check the status of the volume slider*/
         volumeSlider.addChangeListener(e -> {
@@ -75,6 +94,20 @@ public class PlayerWindow extends javax.swing.JFrame {
         });
 
         songTable.setAutoCreateRowSorter(true);
+        songTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent me) {
+                JTable table = (JTable) me.getSource();
+                Point p = me.getPoint();
+                int row = table.rowAtPoint(p);
+                if(me.getClickCount()==2){
+                    rowIndex = row;
+                    appPlayer.stopSong();
+                    appPlayer.startSong((String) songTable.getValueAt(row, 0), startTimeLabel, endTimeLabel);
+                    playPauseButton.setIcon(new ImageIcon("res/pause.png"));
+                }
+            }
+        });
         songTable.setModel(new DefaultTableModel(
                 new Object [][] {},
                 new String [] {
@@ -84,7 +117,6 @@ public class PlayerWindow extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int column) { return false; }
         });
         jScrollPane1.setViewportView(songTable);
-        jScrollPane3.setViewportView(jTree1);
 
         startTimeLabel.setText("00:00");
         startTimeLabel.setForeground(Color.WHITE);
@@ -114,11 +146,9 @@ public class PlayerWindow extends javax.swing.JFrame {
                     appPlayer.startSong((String)songTable.getValueAt(rowIndex,0), startTimeLabel, endTimeLabel);
                     playPauseButton.setIcon(pauseIcon);
                 }else if(isPlaying){
-                    System.out.println("Paused pressed");
                     playPauseButton.setIcon(playIcon);
                     appPlayer.pauseSong();
                 }else{
-                    System.out.println("Play pressed");
                     playPauseButton.setIcon(pauseIcon);
                     appPlayer.resumeSong();
                 }
@@ -142,12 +172,10 @@ public class PlayerWindow extends javax.swing.JFrame {
             public void actionPerformed( ActionEvent arg0 )
             {
                 if(isMuted){
-                    System.out.println("Unmute pressed");
                     muteButton.setIcon(muteIcon);
                     appPlayer.changeMuteStatus(isMuted);
                     isMuted = false;
                 }else{
-                    System.out.println("Mute pressed");
                     muteButton.setIcon(unmuteIcon);
                     appPlayer.changeMuteStatus(isMuted);
                     isMuted = true;
@@ -195,84 +223,60 @@ public class PlayerWindow extends javax.swing.JFrame {
         inferiorPanelLayout.setHorizontalGroup(
                 inferiorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(inferiorPanelLayout.createSequentialGroup()
-                                .addGap(63, 63, 63)
-                                .addComponent(startTimeLabel)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(separatorLabel)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(endTimeLabel)
-                                .addGap(24, 24, 24)
-                                .addComponent(replayButton, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(stopButton, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(previousButton, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(4, 4, 4)
-                                .addComponent(playPauseButton, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(nextButton, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(muteButton, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(39, 39, 39)
-                                .addComponent(volumeSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addGroup(inferiorPanelLayout.createSequentialGroup()
                                 .addContainerGap()
-                                .addComponent(timeSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addGroup(inferiorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(timeSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(controlPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                 .addContainerGap())
         );
         inferiorPanelLayout.setVerticalGroup(
                 inferiorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, inferiorPanelLayout.createSequentialGroup()
-                                .addGap(0, 0, 0)
-                                .addComponent(timeSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addGap(2, 2, 2)
+                                .addComponent(timeSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 58, Short.MAX_VALUE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(inferiorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                        .addComponent(nextButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(muteButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(playPauseButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(stopButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(previousButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addGroup(inferiorPanelLayout.createSequentialGroup()
-                                                .addGap(0, 0, Short.MAX_VALUE)
-                                                .addGroup(inferiorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                                        .addComponent(volumeSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                        .addGroup(inferiorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                                                .addComponent(startTimeLabel)
-                                                                .addComponent(endTimeLabel)
-                                                                .addComponent(separatorLabel))))
-                                        .addComponent(replayButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                .addContainerGap())
+                                .addComponent(controlPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+
+        javax.swing.GroupLayout mainPanelLayout = new javax.swing.GroupLayout(mainPanel);
+        mainPanel.setLayout(mainPanelLayout);
+        mainPanelLayout.setHorizontalGroup(
+                mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGap(0, 195, Short.MAX_VALUE)
+        );
+        mainPanelLayout.setVerticalGroup(
+                mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGap(0, 0, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
                 layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(inferiorPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(layout.createSequentialGroup()
-                                .addContainerGap()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                         .addGroup(layout.createSequentialGroup()
-                                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 163, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED))
-                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                                .addComponent(selectFolder)
-                                                .addGap(42, 42, 42)))
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 465, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                                .addGap(64, 64, 64)
+                                                .addComponent(selectFolder))
+                                        .addGroup(layout.createSequentialGroup()
+                                                .addContainerGap()
+                                                .addComponent(mainPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 587, Short.MAX_VALUE)
+                                .addContainerGap())
+                        .addComponent(inferiorPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
                 layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                                 .addContainerGap()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 439, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                        .addGroup(layout.createSequentialGroup()
                                                 .addComponent(selectFolder)
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 409, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                .addComponent(mainPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 446, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(inferiorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
@@ -284,7 +288,7 @@ public class PlayerWindow extends javax.swing.JFrame {
     /** This is audio file chooser event handler. The filter narrows the options to the three formats below.
      * If the file chooser has executed successfully the AppPlayer will receive the song
      * and make it ready to play.*/
-    private void selectFolderActionPerformed(java.awt.event.ActionEvent evt) {
+    private void selectFolderActionPerformed() {
 
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setMultiSelectionEnabled(true);
@@ -299,12 +303,12 @@ public class PlayerWindow extends javax.swing.JFrame {
 
     /** Stop Button event handler*/
     private void stopButtonActionPerformed(ActionEvent evt) {
-        System.out.println("Stop pressed");
         appPlayer.stopSong();
     }
 
     private void replayButtonActionPerformed(ActionEvent evt) {
-        System.out.println("replay pressed");
+        toggleReplay = !toggleReplay;
+        appPlayer.enableReplay(toggleReplay);
     }
 
     private boolean hasSelectionChanged(int old, int current){
@@ -347,10 +351,10 @@ public class PlayerWindow extends javax.swing.JFrame {
     private JLabel startTimeLabel;
     private JLabel endTimeLabel;
     private JLabel separatorLabel;
+    private JPanel mainPanel;
+    private JPanel controlPanel;
     private JPanel inferiorPanel;
     private JScrollPane jScrollPane1;
-    private JScrollPane jScrollPane3;
-    private JTree jTree1;
     private JButton muteButton;
     private JButton stopButton;
     private JButton previousButton;
@@ -362,6 +366,8 @@ public class PlayerWindow extends javax.swing.JFrame {
     private JSlider timeSlider;
     private JSlider volumeSlider;
     private AppPlayer appPlayer;
+    private boolean toggleReplay;
+    public static boolean disableSkip;
     int selected = -1;
     int rowIndex;
     // End of variables declaration

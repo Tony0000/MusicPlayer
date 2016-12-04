@@ -16,14 +16,20 @@ public class AppPlayer {
 
     private MediaPlayer currentPlayer;
     private Media currentMedia;
+    private double currentVolume = 0.2;
     private boolean isPlaying;
+    private static boolean replayStatus;
     private List<String> songPathList;
     private Map<String, String> tableToFilePath;
+    private JSlider slider;
+    private JLabel start;
 
 
-    /** Initializes the JFX to handle media playback*/
-    public AppPlayer(){
+    /** Initializes the variables and JFX to handle media playback*/
+    public AppPlayer(JSlider slider){
+        this.slider = slider;
         isPlaying = false;
+        replayStatus = false;
         songPathList = new ArrayList<>();
         tableToFilePath = new HashMap<>();
         new JFXPanel();
@@ -36,7 +42,7 @@ public class AppPlayer {
         tableModel.getDataVector().clear();
         songPathList.clear();
         tableToFilePath.clear();
-        listSupportedFiles(directory);
+        songPathList = listSupportedFiles(directory, songPathList);
 
         int nOfSongs = songPathList.size();
         for(int i = 0; i < nOfSongs; i++){
@@ -46,23 +52,39 @@ public class AppPlayer {
         }
     }
 
-    /** Starts the song
+    /** Starts the song at given index
      * @param index song index to be found and played
      * @param start label to track current time elapsed
      * @param end label to mark the end time of a song */
     public void startSong(String index, JLabel start, JLabel end){
         isPlaying = true;
+        this.start = start;
         currentMedia = new Media(tableToFilePath.get(index));
         currentPlayer = new MediaPlayer(currentMedia);
         currentPlayer.setAutoPlay(true);
+        slider.setValue(0);
         currentPlayer.setOnReady(() -> {                                //new thread
             end.setText(formatDuration(currentMedia.getDuration()));
+            slider.setMaximum((int)currentPlayer.getTotalDuration().toMillis());
+            currentPlayer.setVolume(currentVolume);
             currentPlayer.play();
-
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while(currentPlayer.getStatus()!= MediaPlayer.Status.STOPPED){
+                        updateTimeLabel(formatDuration(currentPlayer.getCurrentTime()));
+                        slider.setValue((int)Math.floor(currentPlayer.getCurrentTime().toMillis()));
+                    }
+                }
+            }).start();
+        });
+        currentPlayer.setOnEndOfMedia(() ->{
+            if(replayStatus)
+                startSong(index, start, end);
         });
     }
 
-    /** Pauses the song*/
+    /** Resumes the song*/
     public void resumeSong(){
         if(!isPlaying) {
             isPlaying = true;
@@ -83,7 +105,7 @@ public class AppPlayer {
             currentPlayer.stop();
     }
 
-    /** Set to music to mute or unmute if already muted.
+    /** Toggle the music mute status
      * @param status new mute status of this song */
     public void changeMuteStatus(boolean status){
         if(currentMedia!=null)
@@ -91,10 +113,31 @@ public class AppPlayer {
     }
 
     /** Set a new current volume to the media playing or paused. Only works if there is a media already set.
+     * The volume set here will pass through to the next song.
      * @param volume new current volume*/
     public void setVolume(double volume){
-        if(currentMedia != null)                        //Case there is no music set
+        if(currentMedia != null) {                        //Case there is no music set
             currentPlayer.setVolume(volume);
+            currentVolume = volume;
+        }
+    }
+
+    /** Toggle the replay status for the current song
+     * @param status Set replay to On or Off */
+    public void enableReplay(boolean status){
+        replayStatus = status;
+    }
+
+    /**Update the label which tracks current time
+     * @param elapsedTime current time */
+    public void updateTimeLabel(String elapsedTime){
+        final String time = elapsedTime;
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                start.setText(time);
+            }
+        });
     }
 
     /** Skip to the new time position in the media playing or paused, has no effect the player is in STOPPED state.
@@ -102,8 +145,7 @@ public class AppPlayer {
      *  @param position the percentage of the new current time to seek in the media and varies from 0.0 to 1.0*/
     public void skip(double position){
         if(currentMedia!=null){
-            double mediaDuration = currentMedia.getDuration().toMillis();
-            currentPlayer.seek(new Duration(mediaDuration*position));
+            currentPlayer.seek(new Duration(position));
         }
     }
 
@@ -118,17 +160,30 @@ public class AppPlayer {
         return String.format("%1$02d:%2$02d", minutesWhole, secondsWhole);
     }
 
-    public void listSupportedFiles(File directory){
+    /**List files filtered by supported extension
+     * @param directory root directory to look for files
+     * @return list of songs path from given directory and its subdirectories. */
+    public List<String> listSupportedFiles(File directory,List<String> songsList){
         File[] listF = directory.listFiles(new FileExtensionFilter("mp3", "flac"));
         for(File file : listF){
             try {
-                songPathList.add(file.toURI().toURL().toString());
+                songsList.add(file.toURI().toURL().toString());
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
         }
+        //Look for files in subdirectories
+        File[] subDir = directory.listFiles();
+        for(File file : subDir){
+            if(file.isDirectory())
+                listSupportedFiles(file.getAbsoluteFile(), songsList);
+        }
+        return songsList;
     }
 
+    /** Extract the metadata from the given media
+     * @param media to extract the metadata
+     * @return An vector of String with the metadata extracted */
     public Vector<String> extractMetaData(Media media){
         String artist = "Desconhecido";         //unknown tag
         String title = "Desconhecido";
