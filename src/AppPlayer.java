@@ -1,10 +1,12 @@
 import javafx.embed.swing.JFXPanel;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.image.Image;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.*;
@@ -16,6 +18,7 @@ public class AppPlayer {
 
     private MediaPlayer currentPlayer;
     private Media currentMedia;
+    private ImageIcon defaultCover;
     private double currentVolume = 0.2;
     private boolean isPlaying;
     private static boolean replayStatus;
@@ -30,6 +33,7 @@ public class AppPlayer {
         this.slider = slider;
         isPlaying = false;
         replayStatus = false;
+        defaultCover = new ImageIcon("res/hm.png");
         songPathList = new ArrayList<>();
         tableToFilePath = new HashMap<>();
         new JFXPanel();
@@ -67,6 +71,14 @@ public class AppPlayer {
             end.setText(formatDuration(currentMedia.getDuration()));
             slider.setMaximum((int)currentPlayer.getTotalDuration().toMillis());
             currentPlayer.setVolume(currentVolume);
+            final Image cover = getAlbumCover(currentMedia);
+            if(cover != null){
+                final java.awt.Image resized = SwingFXUtils.fromFXImage(cover, null).getScaledInstance(256, 256, java.awt.Image.SCALE_SMOOTH);
+                final ImageIcon convertedCover = new ImageIcon(resized);
+                PlayerWindow.label.setIcon(convertedCover);
+            }else
+                PlayerWindow.label.setIcon(defaultCover);
+
             currentPlayer.play();
             new Thread(new Runnable() {
                 @Override
@@ -215,6 +227,16 @@ public class AppPlayer {
         tableToFilePath.put(title, media.getSource());
 
         return row;
+    }
+
+    public Image getAlbumCover(Media media){
+        for (Map.Entry<String, Object> entry : media.getMetadata().entrySet()){
+            switch (entry.getKey()){
+                    case "image":
+                    return (Image)entry.getValue();
+            }
+        }
+        return null;
     }
 
 }

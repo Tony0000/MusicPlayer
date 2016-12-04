@@ -29,10 +29,10 @@ public class PlayerWindow extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">
     private void initComponents() {
 
-        //GridBagConstraints gridBagConstraints;
+        //albumCover = new Image("res/default_cover.png");
         jScrollPane1 = new JScrollPane();
         songTable = new JTable();
-        mainPanel = new JPanel();
+        leftPanel = new JPanel();
         controlPanel = new JPanel();
         inferiorPanel = new JPanel();
         separatorLabel = new JLabel();
@@ -51,14 +51,14 @@ public class PlayerWindow extends javax.swing.JFrame {
         toggleReplay = false;
         disableSkip = false;
 
-        setLocation(getToolkit().getScreenSize().width/2, getToolkit().getScreenSize().height/6);
+        setLocation(getToolkit().getScreenSize().width/3, getToolkit().getScreenSize().height/6);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         inferiorPanel.setBackground(new Color(30, 80, 128));
         controlPanel.setBackground(new Color(30, 80, 128));
-
+        ImageIcon image = new ImageIcon("res/waiting.png");
+        label = new JLabel(image);
         controlPanel.add(startTimeLabel);
-
         controlPanel.add(separatorLabel);
         controlPanel.add(endTimeLabel);
         controlPanel.add(replayButton);
@@ -238,15 +238,17 @@ public class PlayerWindow extends javax.swing.JFrame {
                                 .addComponent(controlPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
-        javax.swing.GroupLayout mainPanelLayout = new javax.swing.GroupLayout(mainPanel);
-        mainPanel.setLayout(mainPanelLayout);
-        mainPanelLayout.setHorizontalGroup(
-                mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout leftPanelLayout = new javax.swing.GroupLayout(leftPanel);
+        leftPanel.setLayout(leftPanelLayout);
+        leftPanelLayout.setHorizontalGroup(
+                leftPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGap(0, 195, Short.MAX_VALUE)
+                        .addComponent(label)
         );
-        mainPanelLayout.setVerticalGroup(
-                mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        leftPanelLayout.setVerticalGroup(
+                leftPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(label)
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -260,7 +262,7 @@ public class PlayerWindow extends javax.swing.JFrame {
                                                 .addComponent(selectFolder))
                                         .addGroup(layout.createSequentialGroup()
                                                 .addContainerGap()
-                                                .addComponent(mainPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                                .addComponent(leftPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 587, Short.MAX_VALUE)
                                 .addContainerGap())
@@ -274,7 +276,7 @@ public class PlayerWindow extends javax.swing.JFrame {
                                         .addGroup(layout.createSequentialGroup()
                                                 .addComponent(selectFolder)
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(mainPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                                .addComponent(leftPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                         .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 446, Short.MAX_VALUE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(inferiorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -351,7 +353,7 @@ public class PlayerWindow extends javax.swing.JFrame {
     private JLabel startTimeLabel;
     private JLabel endTimeLabel;
     private JLabel separatorLabel;
-    private JPanel mainPanel;
+    private JPanel leftPanel;
     private JPanel controlPanel;
     private JPanel inferiorPanel;
     private JScrollPane jScrollPane1;
@@ -368,6 +370,7 @@ public class PlayerWindow extends javax.swing.JFrame {
     private AppPlayer appPlayer;
     private boolean toggleReplay;
     public static boolean disableSkip;
+    public static JLabel label;
     int selected = -1;
     int rowIndex;
     // End of variables declaration
